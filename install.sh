@@ -20,7 +20,7 @@ cd inside_mesh
 python setup.py build_ext --inplace &&
 pip install .
 
-apt install freeglut3-dev
+apt install -y  freeglut3-dev
 
 if [ -d "mesh-fusion" ]
 then
