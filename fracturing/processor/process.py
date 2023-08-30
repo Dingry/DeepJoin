@@ -120,7 +120,7 @@ def main(
         )
         # This should have a passable ratio but I dont have time
         id_train_list, id_val_list, id_test_list = utils.rebalance_split_train_test_val(
-            id_train_list, id_test_list
+            id_train_list, id_test_list, [0.7, 0.2, 0.1]
         )
 
         logging.info("Reduced to {} objects after sampling".format(len(object_id_list)))

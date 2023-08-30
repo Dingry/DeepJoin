@@ -1,4 +1,4 @@
-source env/bin/activate
+# source env/bin/activate
 if [ -f "constants.sh" ]; then
     source constants.sh
 fi

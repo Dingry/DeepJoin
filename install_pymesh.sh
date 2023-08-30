@@ -8,7 +8,8 @@ cd libs &&
 pip install cmake
 
 # Install CGAL
-sudo apt-get install -y \
+apt-get update -y && \
+apt-get install -y \
     libeigen3-dev \
     libgmp-dev \
     libgmpxx4ldbl \
@@ -20,7 +21,11 @@ sudo apt-get install -y \
     libcgal-dev
 
 # Clone and install
-git clone https://github.com/PyMesh/PyMesh.git && \
+if [-d "PyMesh" ] 
+then
+    rm -rf PyMesh
+fi
+git clone https://github.com/PyMesh/PyMesh.git
 cd PyMesh && \
 git submodule update --init && \
 ./setup.py build && \

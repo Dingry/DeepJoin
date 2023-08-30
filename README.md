@@ -40,6 +40,8 @@ sudo apt-get install virtualenv && \
 virtualenv -p python3.8 env && \
 source env/bin/activate && \
 pip install -r requirements.txt && \
+sudo apt-get update && \
+sudo apt-get install libglew-dev && \
 ./install.sh && \
 source setup.sh
 ```

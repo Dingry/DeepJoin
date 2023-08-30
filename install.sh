@@ -9,12 +9,23 @@ cd libs &&
 pip install cython cmake
 
 # Clone inside mesh
-git clone https://github.com/nikwl/inside_mesh.git
+if [ -d "inside_mesh" ]
+then
+    rm -rf inside_mesh
+fi
+git clone https://github.com/Dingry/inside_mesh.git
 cd inside_mesh
 
 # Install inside mesh
 python setup.py build_ext --inplace &&
 pip install .
+
+apt install freeglut3-dev
+
+if [ -d "mesh-fusion" ]
+then
+    rm -rf mesh-fusion
+fi
 
 cd .. && \
     git clone https://github.com/davidstutz/mesh-fusion.git && \

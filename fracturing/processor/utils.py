@@ -149,8 +149,7 @@ def rebalance_split_train_test_val(
 ):
 
     total_num = len(new_train_list) + len(new_test_list)
-
-    assert sum(train_val_test_ratio) == 1
+    assert  np.abs(sum(train_val_test_ratio) - 1) < 1e-3
     train_val_num = int((train_val_test_ratio[0] + train_val_test_ratio[1]) * total_num)
     test_num = total_num - train_val_num
 
