@@ -49,11 +49,12 @@ case $OPERATION in
             "$SPLITSFILE" \
             process_break \
             --breaks "$NUMBREAKS" \
-            --min_break 0.05 \
-            --max_break 0.20 \
+            --min_break 0.3 \
+            --max_break 0.7 \
             --break_method surface-area \
             --outoforder \
-            -t "$NUMFRACTURETHREADS"
+            -t "$NUMFRACTURETHREADS" \
+            # --debug \
         ;;
 
 	"3")

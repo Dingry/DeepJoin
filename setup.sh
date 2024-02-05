@@ -1,4 +1,6 @@
 # source env/bin/activate
+export DATADIR='/home/dingry/Documents/projects/DeepJoin/data'
+
 if [ -f "constants.sh" ]; then
     source constants.sh
 fi

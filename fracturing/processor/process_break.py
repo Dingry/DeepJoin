@@ -91,6 +91,7 @@ def break_mesh(
     noise=0.005,
     replicator=None,
     return_tool=False,
+    icosphere_radius=1.0,
 ):
     """
     Break an object and return the broken and restoration objects.
@@ -100,19 +101,22 @@ def break_mesh(
     if replicator is None:
         replicator = {}
 
-    tool_type = replicator.setdefault("tool_type", np.random.randint(1, high=5))
-    tool_type = 1
+    tool_type = replicator.setdefault("tool_type", np.random.randint(2, high=5))
+
+    # tool_type = 1
+
+    print('tool type: ', tool_type)
     if tool_type == 1:
         tool = pymesh.generate_box_mesh(
-            box_min=[-0.5, -0.5, -0.5], box_max=[0.5, 0.5, 0.5], subdiv_order=6
+            box_min=[-0.5, -0.5, -0.5], box_max=[0.5, 1.0, 0.5], subdiv_order=6
         )
     else:
         if tool_type == 2:
-            tool = pymesh.generate_icosphere(0.5, [0.0, 0.0, 0.0], refinement_order=0)
+            tool = pymesh.generate_icosphere(icosphere_radius, [0.0, 0.0, 0.0], refinement_order=0)
         elif tool_type == 3:
-            tool = pymesh.generate_icosphere(0.5, [0.0, 0.0, 0.0], refinement_order=1)
+            tool = pymesh.generate_icosphere(icosphere_radius, [0.0, 0.0, 0.0], refinement_order=1)
         elif tool_type == 4:
-            tool = pymesh.generate_icosphere(0.5, [0.0, 0.0, 0.0], refinement_order=2)
+            tool = pymesh.generate_icosphere(icosphere_radius, [0.0, 0.0, 0.0], refinement_order=2)
 
         # Disjoint the vertices so that the icosphere isn't regular
         random_disjoint = replicator.setdefault(
@@ -127,7 +131,7 @@ def break_mesh(
     vertices = tool.vertices
 
     # Offset the tool so that the break is roughly in the center
-    set_offset = replicator.setdefault("set_offset", np.array([0.5 + offset, 0, 0]))
+    set_offset = replicator.setdefault("set_offset", np.array([0.5 + np.random.rand() * offset, 0, 0]))
     vertices = vertices + set_offset
 
     # Add random noise to simulate fracture geometry
@@ -147,7 +151,7 @@ def break_mesh(
         np.sqrt(u) * np.cos(2 * np.pi * v),
     ]
     # vertices = np.dot(pymesh.Quaternion(q).to_matrix(), vertices.T).T
-    vertices[:, 1] -= 0.2
+    # vertices[:, 1] -= 0.2
 
     # Add a small random translation
     random_translation = replicator.setdefault(
@@ -158,6 +162,53 @@ def break_mesh(
     # Add a warp
     warp = lambda vs: np.asarray([(v**3) for v in vs])
     vertices += np.apply_along_axis(warp, 1, vertices)
+
+    # random rotation
+    import math
+    # if np.random.random() > 0.5:
+    #     theta_x = (np.random.rand() * 2 * math.pi - math.pi) * 0.1
+    #     theta_y = -math.pi / 2
+    #     theta_z = (np.random.rand() * 2 * math.pi - math.pi) * 0.1
+    #     # rot_matrix = np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]])
+    # else:
+    theta_x = (np.random.rand() * 2 * math.pi - math.pi) * 0.05
+    theta_y = (np.random.rand() * 2 * math.pi - math.pi) * 0.05
+    # mug: scale=0.05, bottle=0.1
+    
+    # for mug and bottle only 
+    theta_z = math.pi / 2
+    Rx = np.array \
+        ([[1, 0, 0], [0, math.cos(theta_x), -math.sin(theta_x)], [0, math.sin(theta_x), math.cos(theta_x)]])
+    Ry = np.array \
+        ([[math.cos(theta_y), 0, math.sin(theta_y)], [0, 1, 0], [-math.sin(theta_y), 0, math.cos(theta_y)]])
+    Rz = np.array \
+        ([[math.cos(theta_z), math.sin(theta_z), 0], [-math.sin(theta_z), math.cos(theta_z), 0], [0, 0, 1]])
+    rot_matrix = np.dot(Rz, np.dot(Ry, Rx))
+    vertices = vertices @ rot_matrix.T
+    # finish
+
+    if tool_type > 1:
+        index = (np.abs(vertices[:, 0]) < 0.05) & (np.abs(vertices[:, 2]) < 0.05)
+        vertices[..., 1] -= (np.random.rand()* vertices[index, 1].max() - 0.05)
+    else:
+        index = (np.abs(vertices[:, 0]) < 0.05) & (np.abs(vertices[:, 2]) < 0.05)
+        vertices[..., 1] -= np.random.rand()* vertices[index, 1].max()
+
+    # visualization debug
+    import open3d as o3d
+    import copy
+    # pcd = o3d.geometry.TriangleMesh()
+    # pcd.vertices = o3d.utility.Vector3dVector(vertices)
+    # pcd.vertex_colors = o3d.utility.Vector3dVector(np.ones_like(vertices) * [1, 0, 0])
+    # pcd.triangles = o3d.utility.Vector3iVector(np.asarray(tool.faces.copy()))
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(vertices)
+    pcd.colors = o3d.utility.Vector3dVector(np.ones_like(vertices) * [1, 0, 0])
+    pcd2 = o3d.geometry.PointCloud()
+    pcd2.points = o3d.utility.Vector3dVector(copy.deepcopy(np.asarray(mesh.vertices)))
+    pcd2.colors = o3d.utility.Vector3dVector(np.ones_like(np.asarray(mesh.vertices)) * [0, 0, 1])
+    coordiante_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=1.0, origin=[0, 0, 0])
+    o3d.visualization.draw_geometries([pcd, pcd2, coordiante_frame])
 
     # Break
     tool = pymesh.form_mesh(vertices, tool.faces)
@@ -192,7 +243,14 @@ def breaker(
     assert break_method in ["surface-area", "volume", "combined"]
 
     # Break parameters
-    offset = 0.3
+    if '02876657' in f_in:
+        offset = 0.1  # for bottle
+        icosphere_radius = 0.5
+    elif '03797390' in f_out:
+        offset = 0.1  # for mug
+        icosphere_radius = 1.0
+    else:
+        raise NotImplementedError
     refinement_offset = 0.1
     refinement_decay = 0.90
 
@@ -214,7 +272,8 @@ def breaker(
 
         # Break for the first time
         mesh_out, rmesh_out, replicator, mesh_tool = break_mesh(
-            mesh_in, replicator=None, offset=offset, return_tool=True
+            mesh_in, replicator=None, offset=offset, return_tool=True,
+            icosphere_radius=icosphere_radius
         )
 
         # Check to make sure enough of the object was removed
@@ -420,6 +479,12 @@ def process(
         f_in = obj.path_c()
         f_out = obj.path_b(idx)
         f_res = obj.path_r(idx)
+        
+        # === replace to another folder ====
+        f_out = f_out.replace("ShapeNetCore.v2", "ShapeNet_Deepjoin_v4")
+        f_res = f_res.replace("ShapeNetCore.v2", "ShapeNet_Deepjoin_v4")
+        os.makedirs(os.path.dirname(f_out), exist_ok=True)
+        os.system("cp {} {}".format(f_in, f_in.replace("ShapeNetCore.v2", "ShapeNet_Deepjoin_v4")))
 
         f_tool = False
         if args.use_tool:
@@ -460,10 +525,10 @@ def validate_outputs(
 ):
     outputs = []
     for idx in range(num_results):
-        if not os.path.exists(obj.path_b(idx)):
+        if not os.path.exists(obj.path_b(idx).replace("ShapeNetCore.v2", "ShapeNet_Deepjoin_v4")):
             outputs.append(False)
             continue
-        if not os.path.exists(obj.path_r(idx)):
+        if not os.path.exists(obj.path_r(idx).replace("ShapeNetCore.v2", "ShapeNet_Deepjoin_v4")):
             outputs.append(False)
             continue
         if args.use_tool:
@@ -559,8 +624,11 @@ if __name__ == "__main__":
         help="If passed, will not overwrite output files on disk.",
     )
     logger.add_logger_args(parser)
+    global args
     args = parser.parse_args()
     logger.configure_logging(args)
+
+    print("Min_bran Max_break: {} {}".format(args.min_break, args.max_break))
 
     breaker(
         f_in=args.input,
@@ -577,5 +645,5 @@ if __name__ == "__main__":
         max_overall_retries=args.max_overall_retries,
         max_single_retries=args.max_single_retries,
         break_method=args.break_method,
-        overwrite=not args.no_overwrite,
+        overwrite=not args.no_overwrite
     )

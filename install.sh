@@ -29,7 +29,7 @@ fi
 
 cd .. && \
     git clone https://github.com/davidstutz/mesh-fusion.git && \
-    cd mesh-fusion && \
+    cd && \
     cd libfusioncpu && \
     mkdir build && \
     cd build && \
